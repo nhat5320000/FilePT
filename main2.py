@@ -4,15 +4,12 @@ from ultralytics import YOLO
 # Load YOLO model
 eye_detect = YOLO("training/eyes-detect/yolov11n/best.engine", task='detect')
 
-# Kiểm tra xem model có thông tin kích thước đầu vào không
-print("🛠 Model details:", eye_detect)
-
 # Định nghĩa nhãn
 LABELS = ["OK", "NG", "NG1", "NG2", "NG3NG3"]
 
 # Mở camera
 cap = cv2.VideoCapture(0)
-if not cap or not cap.isOpened():
+if not cap.isOpened():
     print("❌ Không thể mở camera!")
     exit()
 
@@ -23,27 +20,41 @@ try:
             print("❌ Không thể đọc frame!")
             break
 
-        # Lấy kích thước input phù hợp nếu model hỗ trợ
-        try:
-            input_size = eye_detect.overrides.get('imgsz', (640, 640))  # Mặc định dùng 640x640 nếu không có thông tin
-        except AttributeError:
-            input_size = (640, 320)  # Nếu lỗi, dùng 640x320
+        # Lấy kích thước input phù hợp
+        input_size = (640, 640)
 
-        # Resize ảnh theo model yêu cầu
-        frame_resized = cv2.resize(frame, input_size)
+        # Resize ảnh
+        frame_resized = cv2.resize(frame, (input_size[1], input_size[0]))
 
-        # Chạy model YOLO với kích thước ảnh phù hợp
-        results = eye_detect(frame_resized, conf=0.7, imgsz=input_size)[0]
+        # Chạy YOLO
+        results = eye_detect.predict(frame_resized, conf=0.4)
 
-        # Duyệt qua từng detection
-        for box in results.boxes:
-            class_id = int(box.cls)
-            if 0 <= class_id < len(LABELS):
-                print(f"🔹 Phát hiện: {LABELS[class_id]}")
+        # Duyệt qua từng detection và vẽ hộp giới hạn
+        for result in results:
+            for box in result.boxes:
+                x1, y1, x2, y2 = map(int, box.xyxy[0].cpu().numpy())  # Lấy tọa độ hộp
+                class_id = int(box.cls.cpu().numpy())  # Lấy ID lớp
+
+                if 0 <= class_id < len(LABELS):
+                    label = LABELS[class_id]
+                    color = (0, 255, 0)  # Màu xanh lá
+
+                    # Vẽ hộp giới hạn lên khung hình
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                    cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 
+                                0.5, color, 2)
+
+        # Hiển thị video
+        cv2.imshow("YOLO Eye Detection", frame)
+
+        # Nhấn 'q' để thoát
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
 except KeyboardInterrupt:
     print("\n🛑 Nhận tín hiệu Ctrl+C, thoát chương trình...")
 
 finally:
     cap.release()
+    cv2.destroyAllWindows()
     print("📢 Đã giải phóng camera.")
