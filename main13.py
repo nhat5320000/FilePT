@@ -13,7 +13,7 @@ if hasattr(object_detect.model, 'names'):
 else:
     class_names = {0: "Object1", 1: "Object2", 2: "Object3", 3: "Object4", 4: "Object5"}
 
-# Tạo dictionary ánh xạ lớp với màu sắc cố định (bạn có thể tự định nghĩa màu hoặc sinh ngẫu nhiên)
+# Tạo dictionary ánh xạ lớp với màu sắc cố định
 color_map = {
     0: (0, 255, 0),   # Xanh lá
     1: (255, 0, 0),   # Xanh dương
@@ -42,18 +42,18 @@ while True:
         print("❌ Không thể đọc frame!")
         break
 
-    # Xử lý frame (resize về 320x320)
-    frame_resized = cv2.resize(frame, (320, 320))
-    results = object_detect(frame_resized, conf=0.11, imgsz=320)
+    # Resize frame về kích thước 640x640 (để phù hợp với mô hình)
+    frame_resized = cv2.resize(frame, (640, 640))
+    results = object_detect(frame_resized, conf=0.11, imgsz=640)
     detections = results[0].boxes
 
-    # Vẽ bounding box và nhãn tương ứng với đối tượng
-    # Giả sử detections.xyxy chứa danh sách box và detections.cls chứa id lớp tương ứng
-    for box, cls in zip(detections.xyxy.int().tolist(), detections.cls.tolist()):
+    # Vẽ bounding box, label và giá trị confidence
+    for box, cls, conf in zip(detections.xyxy.int().tolist(), detections.cls.tolist(), detections.conf.tolist()):
         x1, y1, x2, y2 = box
-        # Chọn màu dựa trên lớp; nếu không có trong color_map thì dùng màu ngẫu nhiên
+        # Lấy màu cho bounding box theo lớp
         color = color_map.get(int(cls), (random.randint(0,255), random.randint(0,255), random.randint(0,255)))
-        label = class_names[int(cls)]
+        # Gộp label và confidence (làm tròn confidence đến 2 chữ số thập phân)
+        label = f"{class_names[int(cls)]}: {conf:.2f}"
         cv2.rectangle(frame_resized, (x1, y1), (x2, y2), color, 2)
         cv2.putText(frame_resized, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
