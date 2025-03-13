@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import time
 from ultralytics import YOLO
 import random
 
@@ -16,23 +15,37 @@ else:
 
 # Tạo dictionary ánh xạ lớp với màu sắc cố định
 color_map = {
-    0: (0, 255, 0),
-    1: (255, 0, 0),
-    2: (0, 0, 255),
-    3: (255, 255, 0),
-    4: (0, 255, 255)
+    0: (0, 255, 0),   # Xanh lá
+    1: (255, 0, 0),   # Xanh dương
+    2: (0, 0, 255),   # Đỏ
+    3: (255, 255, 0), # Ngà vàng
+    4: (0, 255, 255)  # Lục lam
 }
 
-def open_camera():
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("❌ Không thể mở camera!")
-        return None
-    return cap
-
+# Biến điều khiển
 cap = None
 detecting = False
 show_window = False
+
+# Hàm mở camera
+def open_camera():
+    global cap
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("❌ Không thể mở camera!")
+        cap = None
+
+# Hàm đóng camera
+def close_camera():
+    global cap
+    if cap is not None:
+        cap.release()
+        cap = None
+
+# Tạo cửa sổ điều khiển luôn hiển thị
+cv2.namedWindow('Control Panel', cv2.WINDOW_NORMAL)
+cv2.resizeWindow('Control Panel', 300, 100)
+cv2.imshow('Control Panel', np.zeros((100, 300, 3), dtype=np.uint8))
 
 while True:
     key = cv2.waitKey(1) & 0xFF
@@ -42,16 +55,14 @@ while True:
         break
     elif key == ord('e'):
         if not detecting:
-            cap = open_camera()
+            open_camera()
             if cap is not None:
                 detecting = True
                 print("🔧 Bắt đầu phát hiện đối tượng!")
     elif key == ord('r'):
         if detecting:
             detecting = False
-            if cap is not None:
-                cap.release()
-                cap = None
+            close_camera()
             if show_window:
                 cv2.destroyWindow("Object Detection")
             print("🛑 Dừng phát hiện đối tượng và tắt camera.")
@@ -68,10 +79,12 @@ while True:
             print("❌ Không thể đọc frame!")
             break
 
+        # Resize frame về kích thước 640x640 (để phù hợp với mô hình)
         frame_resized = cv2.resize(frame, (640, 640))
         results = object_detect(frame_resized, conf=0.11, imgsz=640)
         detections = results[0].boxes
 
+        # Vẽ bounding box, label và giá trị confidence
         for box, cls, conf in zip(detections.xyxy.int().tolist(), detections.cls.tolist(), detections.conf.tolist()):
             x1, y1, x2, y2 = box
             color = color_map.get(int(cls), (random.randint(0,255), random.randint(0,255), random.randint(0,255)))
@@ -81,7 +94,12 @@ while True:
 
         if show_window:
             cv2.imshow("Object Detection", frame_resized)
+            # Tự động tắt khi cửa sổ bị đóng (nhấn nút X)
+            if cv2.getWindowProperty("Object Detection", cv2.WND_PROP_VISIBLE) < 1:
+                show_window = False
+    else:
+        cv2.waitKey(100)  # Giảm tải CPU khi không phát hiện
 
-if cap is not None:
-    cap.release()
+# Giải phóng tài nguyên
+close_camera()
 cv2.destroyAllWindows()
