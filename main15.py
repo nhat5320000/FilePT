@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 import random
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 from pymodbus.exceptions import ConnectionException
 ip_address = '192.168.4.20'
 client = ModbusTcpClient(ip_address)
