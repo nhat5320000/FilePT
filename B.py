@@ -156,3 +156,22 @@ while True:
             cv2.imwrite(img_filename, frame_flipped)
             print(f"📸 Đã lưu ảnh đầy đủ: {img_filename}")
     elif key == ord('+'):  # Phóng to ảnh
+        zoom_factor += 0.1
+        print(f"🔍 Tỉ lệ zoom: {zoom_factor}")
+    elif key == ord('-'):  # Thu nhỏ ảnh
+        zoom_factor -= 0.1
+        print(f"🔍 Tỉ lệ zoom: {zoom_factor}")
+    elif key == ord('r'):  # Xoay ảnh theo góc
+        rotate_angle += 90
+        print(f"🔄 Góc xoay: {rotate_angle}")
+    elif key == ord('f'):  # Lật ảnh
+        flip_code = 1 if flip_code != 1 else 0
+        print(f"🔄 Lật ảnh: {'Chưa lật' if flip_code == 0 else 'Lật'}")
+    elif key == ord('c'):  # Xóa crop khi nhấn phím 'C'
+        crop_start_point = None
+        crop_end_point = None
+        print("❌ Đã xóa vùng crop.")
+
+# Dọn dẹp
+cap.release()
+cv2.destroyAllWindows()
